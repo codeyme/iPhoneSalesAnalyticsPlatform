@@ -1,13 +1,26 @@
 from pyspark.sql import SparkSession
-from Extract_bronze import *
+from extract_bronze import *
+from transform_silver import *
+from load_gold import *
 
-
-path = 'files:///home/takeo/startApps/localFiles/'
+path = 'file:///home/takeo/startApps/localFiles/'
 # files = ['customers.csv','products.csv','stores.csv','sales.csv']
 # bronze_tables = ['bronze_customers','bronze_products','bronze_stores','bronze_sales']
 entity = ['customers','products','stores','sales']
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    spark:SparkSession = SparkSession.Builder.master('local[1]').appName('iphoneSales').config('spark.sql.warehouse.dir','hdfs:///warehouse/tablespace/managed/hive').enableHiveSupport().getOrCreate()
-    for name in entity:
-        bronze_ingestion(spark,path,name)
+    spark:SparkSession = SparkSession.builder.master("local[1]").appName('iphoneSales').config('spark.sql.warehouse.dir','hdfs:///warehouse/tablespace/managed/hive').enableHiveSupport().getOrCreate()
+    spark.sql("CREATE DATABASE IF NOT EXISTS iphone_analytics")
+    spark.sql("USE iphone_analytics")
+
+
+    # for name in entity:
+    #     bronze_ingestion(spark,path,name)
+    # silver_customers_transform(spark)
+    # silver_products_transform(spark)
+    # silver_stores_transform(spark)
+    # silver_sales_transform(spark)
+    # create_dim(spark)
+    # create_fact(spark)
+    # load_fact(spark)
+    load_dimensions(spark)
