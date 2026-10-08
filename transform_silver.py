@@ -1,4 +1,4 @@
-from pyspark.sql.functions import col, to_date, year,month, dayofmonth
+from pyspark.sql.functions import col, to_date
 
 def silver_customers_transform(spark):
     df = spark.table('bronze_customers')
@@ -21,6 +21,7 @@ def silver_products_transform(spark):
      .format('parquet').saveAsTable('silver_products'))
     print('silver_products')
     return 'silver_products'
+
 def silver_stores_transform(spark):
     df = spark.table('bronze_stores')
     clean_df = (df.withColumn('store_id', col('store_id').cast('int')))
@@ -43,32 +44,3 @@ def silver_sales_transform(spark):
      .format('parquet').saveAsTable('silver_sales'))
     print('silver_sales')
     return 'silver_sales'
-
-
-def load_dimensions(spark):
-    print('starting')
-    customers = (spark.table('silver_customers')
-                 .select('*')
-                 .dropDuplicates(['customer_id'])
-                 )
-    products = (spark.table('silver_products')
-                 .select('*')
-                 .dropDuplicates(['product_id'])
-                 )
-    stores = (spark.table('silver_stores')
-                 .select('*')
-                 .dropDuplicates(['store_id'])
-                 )
-    dates = (spark.table('silver_sales')
-                 .select(col("sale_date").alias("date_key"))
-                 .dropDuplicates(['date_key'])
-                 .withColumn('year',year('date_key'))
-                 .withColumn('month', month('date_key'))
-                 .withColumn('day', dayofmonth('date_key'))
-                 .select('date_key','year','month','day')
-                 )
-    print('done')
-    customers.write.mode('overwrite').insertInto('dim_customer')
-    products.write.mode('overwrite').insertInto('dim_product')
-    stores.write.mode('overwrite').insertInto('dim_store')
-    dates.write.mode('overwrite').insertInto('dim_date')

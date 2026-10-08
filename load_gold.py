@@ -1,4 +1,4 @@
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, year,month, dayofmonth
 
 def create_dim(spark):
     spark.sql('''
@@ -53,6 +53,33 @@ def create_fact(spark):
         partitioned by (date_key date)
         stored as parquet;
     ''')
+def load_dimensions(spark):
+    print('starting')
+    customers = (spark.table('silver_customers')
+                 .select('*')
+                 .dropDuplicates(['customer_id'])
+                 )
+    products = (spark.table('silver_products')
+                 .select('*')
+                 .dropDuplicates(['product_id'])
+                 )
+    stores = (spark.table('silver_stores')
+                 .select('*')
+                 .dropDuplicates(['store_id'])
+                 )
+    dates = (spark.table('silver_sales')
+                 .select(col("sale_date").alias("date_key"))
+                 .dropDuplicates(['date_key'])
+                 .withColumn('year',year('date_key'))
+                 .withColumn('month', month('date_key'))
+                 .withColumn('day', dayofmonth('date_key'))
+                 .select('date_key','year','month','day')
+                 )
+    print('done')
+    customers.write.mode('overwrite').insertInto('dim_customer')
+    products.write.mode('overwrite').insertInto('dim_product')
+    stores.write.mode('overwrite').insertInto('dim_store')
+    dates.write.mode('overwrite').insertInto('dim_date')
 
 def load_fact(spark):
     sales = spark.table('silver_sales')
